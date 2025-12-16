@@ -10,6 +10,10 @@
     <div id="game-ui-container">
         <div id="dev-mode-indicator" class="hidden">DEV MODE</div>
         <div id="top-hud">
+            <div id="score-container" style="display: flex; gap: 20px;">
+                <div id="score-display">Score: 0</div>
+                <div id="high-score-display">High Score: 0</div>
+            </div>
             <div id="coin-counter">Coins: 0</div>
             <div id="explosive-hud" class="powerup-hud hidden">
                 <span>Explosive</span>
@@ -45,6 +49,11 @@
         <h1>3D Invaders</h1>
         <button id="start-game-btn">Start Game</button>
         <button id="shop-btn">Shop</button>
+        <div style="margin-top: 20px;">
+            <label style="font-size: 1.2em;">
+                <input type="checkbox" id="prototype-mode-checkbox"> Prototype Mode
+            </label>
+        </div>
     </div>
 
     <!-- Shop Menu -->

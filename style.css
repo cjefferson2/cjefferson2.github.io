@@ -65,6 +65,12 @@ body {
     text-shadow: 2px 2px 4px #000;
 }
 
+#score-display, #high-score-display {
+    font-size: 2em;
+    color: white;
+    text-shadow: 2px 2px 4px #000;
+}
+
 .powerup-hud {
     margin-top: 10px;
     color: white;
@@ -159,6 +165,21 @@ body {
 .shop-item span {
     font-size: 1.2em;
     text-align: left;
+}
+
+.floating-text {
+    position: absolute;
+    font-weight: bold;
+    font-size: 1.5em;
+    pointer-events: none;
+    text-shadow: 1px 1px 2px black;
+    animation: floatUp 1s ease-out forwards;
+    z-index: 150;
+}
+
+@keyframes floatUp {
+    0% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-50px); }
 }
 
 .hidden {

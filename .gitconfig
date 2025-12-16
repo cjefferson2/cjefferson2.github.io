@@ -1,0 +1,7 @@
+[credential]
+    username = "cjefferson2"
+[user]
+    name = "Charlie Jefferson"
+    email = "cjefferson2@wisc.edu"
+[core]
+    sshCommand = ssh -i ~/.ssh/cjefferson2 -F /dev/null

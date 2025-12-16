@@ -1,10 +1,23 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // --- SCENE SETUP ---
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas') });
 renderer.setSize(window.innerWidth, window.innerHeight);
+
+// --- ASSET LOADING ---
+let playerModelGeometry = null;
+const loader = new GLTFLoader();
+loader.load('models/x_space-flyer-chasing_dragons_triangle.glb', function (gltf) {
+    playerModelGeometry = gltf.scene;
+    // Adjust scale and rotation to fit game
+    playerModelGeometry.scale.set(1.5, 1.5, 1.5); 
+    playerModelGeometry.rotation.y = -Math.PI / 2; // Face forward
+}, undefined, function (error) {
+    console.error(error);
+});
 
 // --- LIGHTING ---
 const ambientLight = new THREE.AmbientLight(0x404040, 2); // soft white light
@@ -17,8 +30,23 @@ scene.add(directionalLight);
 camera.position.set(0, 15, 25);
 camera.lookAt(0, 0, 0);
 
+// --- STARFIELD ---
+const starGeometry = new THREE.BufferGeometry();
+const starCount = 10000;
+const starPositions = new Float32Array(starCount * 3);
+
+for(let i = 0; i < starCount * 3; i++) {
+    starPositions[i] = (Math.random() - 0.5) * 2000; // Spread stars over a large area
+}
+
+starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7 }); // Small, white points
+const starField = new THREE.Points(starGeometry, starMaterial);
+scene.add(starField);
+
 // --- GAME STATE ---
 let gameState = 'main_menu'; // 'main_menu', 'playing', 'paused', 'game_over', 'win', 'shop'
+let isPrototypeMode = false;
 // Player physics
 let playerSpeed = 0;
 const playerMaxSpeed = 25;
@@ -59,11 +87,16 @@ let inkedActive = false;
 let inkedTimer = 0;
 let lives = 2;
 let devMode = false;
+let score = 0;
+let highScore = parseInt(localStorage.getItem('highScore')) || 0;
+let ufoActive = false;
 
 // --- UI ELEMENTS ---
 const gameOverUI = document.getElementById('game-over');
 const youWinUI = document.getElementById('you-win');
 const coinCounterUI = document.getElementById('coin-counter');
+const scoreDisplay = document.getElementById('score-display');
+const highScoreDisplay = document.getElementById('high-score-display');
 const livesCounter = document.getElementById('lives-counter');
 const mainMenuUI = document.getElementById('main-menu');
 const pauseMenuUI = document.getElementById('pause-menu');
@@ -73,6 +106,7 @@ const shopBtn = document.getElementById('shop-btn');
 const resumeBtn = document.getElementById('resume-btn');
 const quitBtn = document.getElementById('quit-btn');
 const backToMenuBtn = document.getElementById('back-to-menu-btn');
+const prototypeModeCheckbox = document.getElementById('prototype-mode-checkbox');
 const canvas = document.getElementById('game-canvas');
 const explosiveHud = document.getElementById('explosive-hud');
 const explosiveBar = document.getElementById('explosive-bar');
@@ -108,7 +142,7 @@ const shopElements = {
 
 
 // --- GAME OBJECTS ---
-let player, bullets, enemyBullets, enemyInkerBullets, enemies, coins, enemyGroup, crosshair;
+let player, bullets, enemyBullets, enemyInkerBullets, enemies, coins, enemyGroup, crosshair, ufo;
 
 
 // --- INITIALIZATION ---
@@ -117,6 +151,7 @@ function initGameObjects() {
     if (player) scene.remove(player);
     if (enemyGroup) scene.remove(enemyGroup);
     if (crosshair) scene.remove(crosshair);
+    if (ufo) scene.remove(ufo);
     coins?.forEach(c => scene.remove(c));
     enemyBullets?.forEach(eb => scene.remove(eb));
     enemyInkerBullets?.forEach(eib => scene.remove(eib));
@@ -148,19 +183,31 @@ function initGameObjects() {
     pierceTimer = 0;
     inkedActive = false;
     inkedTimer = 0;
+    ufoActive = false;
+    score = 0;
+    
+    // UI Updates
     explosiveHud.classList.add('hidden');
     pierceHud.classList.add('hidden');
     inkedHud.classList.add('hidden');
     lives = 2;
     livesCounter.textContent = `Lives: ${lives}`;
+    scoreDisplay.textContent = `Score: ${score}`;
+    highScoreDisplay.textContent = `High Score: ${highScore}`;
 }
 
 
 // --- FACTORIES ---
 function createPlayer() {
-    const geometry = new THREE.BoxGeometry(2, 2, 2);
-    const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-    const playerMesh = new THREE.Mesh(geometry, material);
+    let playerMesh;
+    if (playerModelGeometry && !isPrototypeMode) {
+        playerMesh = playerModelGeometry.clone();
+    } else {
+        const geometry = new THREE.BoxGeometry(2, 2, 2);
+        const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+        playerMesh = new THREE.Mesh(geometry, material);
+    }
+    
     playerMesh.position.y = 0;
     playerMesh.position.z = 15;
     return playerMesh;
@@ -178,13 +225,24 @@ function createBullet(origin) {
 }
 
 function createEnemies() {
-    const enemyGrid = [];
-    const rows = 5;
-    const cols = 10;
+    // Dynamic dimensions based on level
+    // Starts biased small (3-9 range at Lvl 1) and grows (3-13 range at Lvl 10)
+    // Formula: Base + Level_Scaled_Random + Static_Random
+    
+    const levelFactor = 3 + (level * 0.4);
+    const staticVariance = 4;
+
+    const rollRows = 3 + Math.floor(Math.random() * levelFactor) + Math.floor(Math.random() * staticVariance);
+    const rollCols = 3 + Math.floor(Math.random() * levelFactor) + Math.floor(Math.random() * staticVariance);
+    
+    const rows = rollRows;
+    const cols = rollCols;
     const spacingX = 4;
     const spacingZ = 3;
     const startX = -((cols - 1) * spacingX) / 2;
     const startZ = -15;
+
+    const enemyGrid = [];
 
     for (let row = 0; row < rows; row++) {
         // Back row is Blue
@@ -192,19 +250,21 @@ function createEnemies() {
         
         let type = 'red';
         let color = 0xff0000;
-        let size = 1.8; // 10% smaller than original 2.0
+        let size = 1.8; 
 
         if (isBackRow) {
             type = 'blue';
             color = 0x0000ff;
         } else {
-            // Front ranks have chance to be 'inker'
-            // Row 0 (front): High chance. Row 3: Low chance.
-            const inkerChance = 0.6 - (row * 0.15); 
+            // Favors middle ranks
+            const middleRow = rows / 2;
+            const distFromMiddle = Math.abs(row - middleRow);
+            const inkerChance = 0.6 - (distFromMiddle * 0.2); 
+            
             if (Math.random() < inkerChance) {
                 type = 'inker';
-                color = 0x4b0082; // Indigo
-                size = 1.4; // 30% smaller than 2.0
+                color = 0x4b0082; 
+                size = 1.4;
             }
         }
 
@@ -225,6 +285,20 @@ function createEnemies() {
         }
     }
     return enemyGrid;
+}
+
+function createUFO() {
+    const geometry = new THREE.BoxGeometry(5, 1, 1);
+    const material = new THREE.MeshStandardMaterial({ color: 0xff0000 }); // Red
+    ufo = new THREE.Mesh(geometry, material);
+    
+    // Pick side (left or right)
+    const startLeft = Math.random() < 0.5;
+    ufo.position.set(startLeft ? -40 : 40, 0, -35); // Behind back rank
+    ufo.userData.direction = startLeft ? 1 : -1;
+    
+    scene.add(ufo);
+    ufoActive = true;
 }
 
 function createEnemyBullet(origin) {
@@ -284,6 +358,30 @@ function createCrosshair() {
     const line = new THREE.Line(geometry, material);
     line.position.y = 0.5;
     return line;
+}
+
+function createFloatingText(text, position3D, color) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    div.className = 'floating-text';
+    div.style.color = color;
+
+    // Project 3D position to 2D screen space
+    const vector = position3D.clone();
+    vector.project(camera);
+
+    const x = (vector.x * .5 + .5) * window.innerWidth;
+    const y = (-(vector.y * .5) + .5) * window.innerHeight;
+
+    div.style.left = `${x}px`;
+    div.style.top = `${y}px`;
+
+    document.getElementById('game-ui-container').appendChild(div);
+
+    // Remove after animation
+    setTimeout(() => {
+        div.remove();
+    }, 1000);
 }
 
 
@@ -395,6 +493,9 @@ window.addEventListener('keydown', (e) => {
             spawnPos.z -= 20; // Spawn it in front so it drifts towards player
             createPowerup(spawnPos, type);
         }
+        if (e.code === 'KeyU') {
+            if (!ufoActive) createUFO();
+        }
     }
 
     if (e.code === 'Escape' && gameState === 'playing') {
@@ -429,6 +530,10 @@ quitBtn.addEventListener('click', showMainMenu);
 shopBtn.addEventListener('click', showShopMenu);
 backToMenuBtn.addEventListener('click', showMainMenu);
 
+prototypeModeCheckbox.addEventListener('change', (e) => {
+    isPrototypeMode = e.target.checked;
+});
+
 // Shop Listeners
 shopElements.crosshair.btn.addEventListener('click', () => purchaseUpgrade('crosshair'));
 shopElements.sideThrusters.btn.addEventListener('click', () => purchaseUpgrade('sideThrusters'));
@@ -443,6 +548,34 @@ function onWindowResize() {
 }
 
 // --- GAME LOGIC ---
+function addScore(points) {
+    score += points;
+    scoreDisplay.textContent = `Score: ${score}`;
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('highScore', highScore);
+        highScoreDisplay.textContent = `High Score: ${highScore}`;
+    }
+}
+
+function updateUFO(delta) {
+    if (!ufoActive) {
+        // Spawn chance
+        if (Math.random() < 0.05 * delta) {
+            createUFO();
+        }
+    } else {
+        if (!ufo) return;
+        ufo.position.x += ufo.userData.direction * 10 * delta; // Speed 10
+        
+        // Despawn
+        if (Math.abs(ufo.position.x) > 50) {
+            scene.remove(ufo);
+            ufoActive = false;
+        }
+    }
+}
+
 function updatePlayer(delta) {
     if (!player) return;
 
@@ -501,7 +634,7 @@ function updateBullets(delta) {
     for (let i = bullets.length - 1; i >= 0; i--) {
         const bullet = bullets[i];
         bullet.position.z -= currentBulletSpeed * delta;
-        if (bullet.position.z < -25) {
+        if (bullet.position.z < -60) {
             scene.remove(bullet);
             bullets.splice(i, 1);
         }
@@ -509,7 +642,7 @@ function updateBullets(delta) {
 }
 
 function updateCoins(delta) {
-    if (!coins) return;
+    if (!coins || !player) return;
     const coinFallSpeed = 10;
     const playerBox = new THREE.Box3().setFromObject(player);
 
@@ -532,7 +665,7 @@ function updateCoins(delta) {
 }
 
 function updatePowerups(delta) {
-    if (!powerups) return;
+    if (!powerups || !player) return;
     const powerupFallSpeed = 8;
     const playerBox = new THREE.Box3().setFromObject(player);
 
@@ -628,7 +761,7 @@ function updateEnemyBullets(delta) {
 }
 
 function updateInkerBullets(delta) {
-    if (!enemyInkerBullets) return;
+    if (!enemyInkerBullets || !player) return;
     const bulletSpeed = 12; // Slightly slower
     const playerBox = new THREE.Box3().setFromObject(player);
 
@@ -683,7 +816,7 @@ function updateEnemies(delta) {
 }
 
 function checkCollisions() {
-    if (!enemyGroup) return;
+    if (!enemyGroup || !player) return;
     const playerBox = new THREE.Box3().setFromObject(player);
 
     // Player Bullets vs Enemies
@@ -741,6 +874,11 @@ function checkCollisions() {
                 enemiesToDestroy.forEach(e => {
                     const indexInGroup = enemyGroup.children.indexOf(e);
                     if (indexInGroup > -1) {
+                        // Scoring
+                        if (e.userData.type === 'red') addScore(20);
+                        else if (e.userData.type === 'inker') addScore(30);
+                        else if (e.userData.type === 'blue') addScore(40);
+
                         const enemyWorldPos = new THREE.Vector3();
                         e.getWorldPosition(enemyWorldPos);
                         enemyGroup.remove(e);
@@ -753,6 +891,22 @@ function checkCollisions() {
                     bullets.splice(i, 1);
                     break; 
                 }
+            }
+        }
+        
+        // UFO Collision
+        if (ufoActive && ufo) {
+            const ufoBox = new THREE.Box3().setFromObject(ufo);
+            if (bulletBox.intersectsBox(ufoBox)) {
+                scene.remove(ufo);
+                ufoActive = false;
+                scene.remove(bullet);
+                bullets.splice(i, 1);
+                
+                const bonus = [50, 100, 150][Math.floor(Math.random() * 3)];
+                addScore(bonus);
+                // Could add floating text here
+                continue;
             }
         }
     }
@@ -851,6 +1005,7 @@ function animate() {
         updatePowerupTimers(delta);
         updateEnemyShooting(delta);
         updateEnemies(delta);
+        updateUFO(delta);
         checkCollisions();
         checkWinCondition();
     } else if (gameState === 'transition') {

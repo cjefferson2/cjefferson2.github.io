@@ -1,73 +1,67 @@
 # 3D Space Invaders Clone - Feature Summary
 
-This document summarizes the current features implemented in the 3D Space Invaders clone.
+This document details the features implemented in the 3D Space Invaders clone.
 
-## Core Gameplay Mechanics
+## Core Gameplay
 
-*   **3D Environment:** The game is built using `THREE.js`, rendering a space environment with 3D models for all entities.
-*   **Player Ship:**
-    *   Controlled by the player (represented as a green cube).
-    *   Movable left and right across the bottom of the screen.
-    *   Fires white spherical bullets upwards.
-*   **Enemy Invaders:**
-    *   Primary enemies are red cubes, moving in a grid formation.
-    *   Move side-to-side and periodically advance downwards towards the player.
-    *   **New Enemy Type:** The back rank of the enemy formation is replaced by blue cubes.
-        *   Blue enemies shoot yellow spherical bullets directly towards the player's line of movement.
-        *   Their bullets pass through other enemies and only collide with the player.
-*   **Game Objectives:**
-    *   **Win Condition:** Destroy all enemy invaders.
-    *   **Lose Condition:** Player loses all lives, or enemies reach the player's line.
+*   **Infinite Onslaught:** The game features infinite waves of enemies.
+    *   **Level Transition:** Between waves, the player ship performs a warp-speed flyover animation.
+    *   **Difficulty Scaling:** Each level increases overall enemy speed and firing rate by an additive 10%.
+*   **Player Physics:**
+    *   **Momentum:** The ship has weight, featuring acceleration and friction (drifting) rather than instant movement.
+    *   **3D Model:** The player pilots a detailed 3D spaceship (`x_space-flyer` model), scaled to 1.5x its previous size.
+    *   **Prototype Mode:** A toggle in the main menu allows switching between the 3D model and a simple hitbox primitive.
+*   **Starfield:** A procedurally generated background with 10,000 stars provides depth.
 
-## User Interface & Game Flow
+## Enemies & AI
 
-*   **Main Menu:**
-    *   Appears on game launch or when quitting from an in-game menu.
-    *   Options: "Start Game" and "Shop".
-*   **Pause Menu:**
-    *   Accessible by pressing the `Escape` key during gameplay.
-    *   Options: "Resume" game or "Quit to Main Menu".
-*   **Game Over/You Win Screens:** Display appropriate messages and return to the Main Menu upon user input.
-*   **Persistent HUD:**
-    *   **Coin Counter:** Displays the player's current coin balance (top-left, always visible).
-    *   **Lives Counter:** Displays remaining player lives (bottom-left).
-    *   **Power-up Indicators:** Bars show active power-ups and their remaining duration.
+The enemy formation is randomized every level and is symmetrical, featuring distinct classes. The dimensions (rows and columns) are dynamically generated:
+*   **Formation Scaling:** Starts with smaller formations (e.g., 3-9 range for rows/cols at Level 1), and progressively biases towards larger formations (e.g., 3-13 range at Level 10) as the game level increases. This ensures a gradual difficulty curve while still allowing for random "insane" waves to appear earlier.
 
-## Difficulty & Progression
+1.  **Red Invader (Grunt):**
+    *   Standard enemy type (10% smaller than original size).
+    *   Worth **20 points**.
+2.  **Blue Invader (Shooter):**
+    *   Spawns exclusively in the **back ranks**.
+    *   Fires lethal yellow projectiles directly down the player's lane.
+    *   Firing rate increases with movement speed.
+    *   Worth **40 points**.
+3.  **Inker (Debuffer):**
+    *   **Appearance:** Distinct purple enemies (30% smaller than original size).
+    *   **Spawn:** Favors the **middle ranks** of the formation.
+    *   **Attack:** Fires dark "ink" projectiles.
+    *   **Effect:** Does **not damage** the player. Instead, applies an **"Inked" status effect** for 5 seconds, reducing player speed and acceleration by 70%.
+    *   Worth **30 points**.
+4.  **UFO (Mystery Ship):**
+    *   Rare spawn (5% chance/sec) that flies across the top background.
+    *   Worth **50, 100, or 150 points** when destroyed.
 
-*   **Enemy Advancement:** Enemies advance towards the player three times further with each downward step.
-*   **Dynamic Enemy Speed:** Enemies' side-to-side movement speed increases by 1.17x every three times they change horizontal direction (hit a boundary).
-*   **Linked Firing Rate:** The firing rate of blue enemies is directly proportional to their current side-to-side movement speed, with a doubled base rate compared to initial settings.
+## Economy & Progression
 
-## Economy & Upgrades
+*   **Coins:** Enemies drop coins that must be collected by the player.
+*   **Shop System:** A comprehensive upgrade shop is available from the main menu.
+    *   **Crosshair:** Purchasable visual aid (toggle with 'C').
+    *   **Side Thrusters:** Upgrade handling (friction/braking).
+    *   **Main Thruster:** Upgrade acceleration.
+    *   **Reload Speed:** Reduce fire cooldown.
+    *   **Gun Barrel:** Increase bullet flight speed.
+    *   *Note: Upgrades are tiered (Lvl 1, 2, 3...) and costs increase by 5 coins per level.*
 
-*   **Coin System:**
-    *   Enemies drop golden cylindrical coins upon destruction.
-    *   Coins fall towards the player and are collected on collision.
-    *   Collected coins are added to the player's total.
-*   **Shop:**
-    *   Accessible from the Main Menu.
-    *   **Crosshair Aim-Assist:** A purchasable upgrade for 10 coins.
-        *   Activates a green aiming line from the player's ship.
-        *   Toggleable with the 'C' key after purchase.
-        *   The purchase is permanent across game restarts.
+## Combat & Power-ups
 
-## Power-up System
-
+*   **Lives System:** Player starts with 2 lives. Taking damage clears screen of projectiles and deducts a life.
+*   **Scoring:** High scores are saved locally (`localStorage`) and displayed on the top-left section of the HUD.
+*   **Bullet Range:** Player bullets travel further, allowing hits on the UFO and back-rank enemies in large formations.
 *   **Power-up Drops:**
-    *   Enemies have a 10% chance to drop a power-up upon destruction.
-    *   Only the first enemy hit by a player's bullet can trigger a power-up drop (subsequent hits from piercing/explosive effects do not).
-    *   Power-ups fall towards the player and are collected on collision.
-    *   Each power-up lasts for 10 seconds.
-*   **Types of Power-ups:**
-    *   **Explosive Bullets (Magenta Icon):** Player bullets explode on impact, destroying the hit enemy and any other enemies within a 1-Manhattan distance ('+' shape) around it.
-    *   **Piercing Bullets (Cyan Icon):** Player bullets can pierce through up to 2 enemies, hitting a total of 3 targets before being destroyed.
-*   **Combinable Effects:** Both Explosive and Piercing power-ups can be active simultaneously.
+    *   **Drop Logic:** 25% chance to spawn from the **first enemy hit** by a bullet.
+    *   **Explosive (Magenta):** Bullets destroy the target and all adjacent enemies in a '+' pattern.
+    *   **Piercing (Cyan):** Bullets travel through enemies, destroying up to 3 targets.
+    *   *Both effects can be active simultaneously.*
 
-## Player Survivability
+## Developer Tools
 
-*   **Lives System:**
-    *   Player starts with 2 lives.
-    *   Losing a life occurs when hit by an enemy bullet or when enemies reach the player's line.
-    *   Upon losing a life, all enemy bullets on screen are cleared, providing a brief moment of relief.
-    *   The game ends only when all lives are depleted.
+*   **Dev Mode:** Toggle with `~` (Tilde).
+    *   `M`: Add 1000 coins.
+    *   `P`: Force spawn a power-up.
+    *   `U`: Force spawn a UFO.
+    *   Forced 100% drop rate for power-ups on first hit.
