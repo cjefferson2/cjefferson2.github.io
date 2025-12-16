@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Space Invaders</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-ui-container">
+        <div id="dev-mode-indicator" class="hidden">DEV MODE</div>
+        <div id="top-hud">
+            <div id="coin-counter">Coins: 0</div>
+            <div id="explosive-hud" class="powerup-hud hidden">
+                <span>Explosive</span>
+                <div class="hud-bar-container">
+                    <div id="explosive-bar" class="hud-bar"></div>
+                </div>
+            </div>
+            <div id="pierce-hud" class="powerup-hud hidden">
+                <span>Pierce</span>
+                <div class="hud-bar-container">
+                    <div id="pierce-bar" class="hud-bar"></div>
+                </div>
+            </div>
+            <div id="inked-hud" class="powerup-hud hidden">
+                <span>Inked</span>
+                <div class="hud-bar-container">
+                    <div id="inked-bar" class="hud-bar"></div>
+                </div>
+            </div>
+        </div>
+        <div id="bottom-hud">
+            <div id="lives-counter">Lives: 2</div>
+        </div>
+    </div>
+    
+    <div id="info">
+        <div id="game-over" class="hidden">GAME OVER</div>
+        <div id="you-win" class="hidden">YOU WIN!</div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="menu-container">
+        <h1>3D Invaders</h1>
+        <button id="start-game-btn">Start Game</button>
+        <button id="shop-btn">Shop</button>
+    </div>
+
+    <!-- Shop Menu -->
+    <div id="shop-menu" class="menu-container hidden">
+        <h2>Shop</h2>
+        <div id="shop-items">
+            <div class="shop-item">
+                <span id="crosshair-lvl">Crosshair Aim-Assist</span>
+                <button id="buy-crosshair-btn">Buy</button>
+            </div>
+            <div class="shop-item">
+                <span id="side-thrusters-lvl">Side Thrusters (Handling) - Lvl 0</span>
+                <button id="buy-side-thrusters-btn">Buy</button>
+            </div>
+            <div class="shop-item">
+                <span id="main-thruster-lvl">Main Thruster (Power) - Lvl 0</span>
+                <button id="buy-main-thruster-btn">Buy</button>
+            </div>
+            <div class="shop-item">
+                <span id="reload-speed-lvl">Reload Speed (Fire Rate) - Lvl 0</span>
+                <button id="buy-reload-speed-btn">Buy</button>
+            </div>
+            <div class="shop-item">
+                <span id="gun-barrel-lvl">Gun Barrel Length - Lvl 0</span>
+                <button id="buy-gun-barrel-btn">Buy</button>
+            </div>
+        </div>
+        <button id="back-to-menu-btn">Back</button>
+    </div>
+
+    <!-- Pause Menu -->
+    <div id="pause-menu" class="menu-container hidden">
+        <h2>Paused</h2>
+        <button id="resume-btn">Resume</button>
+        <button id="quit-btn">Quit to Main Menu</button>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.165.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module" src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #000;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#game-canvas {
+    display: block;
+}
+
+#info {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 4em;
+    text-align: center;
+    z-index: 100;
+}
+
+#game-ui-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    z-index: 120;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    pointer-events: none; /* Allow clicking through the container */
+}
+
+#top-hud, #bottom-hud {
+    width: 100%;
+}
+
+#lives-counter {
+    font-size: 2em;
+    color: #00ff00;
+    text-shadow: 2px 2px 4px #000;
+}
+
+#dev-mode-indicator {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2em;
+    font-weight: bold;
+    color: red;
+    background-color: rgba(0,0,0,0.7);
+    padding: 5px 10px;
+    border: 2px solid red;
+    z-index: 200;
+}
+
+#coin-counter {
+    font-size: 2em;
+    color: #ffd700; /* Gold color */
+    text-shadow: 2px 2px 4px #000;
+}
+
+.powerup-hud {
+    margin-top: 10px;
+    color: white;
+}
+
+.powerup-hud span {
+    font-size: 1.2em;
+    text-shadow: 1px 1px 2px #000;
+}
+
+.hud-bar-container {
+    width: 150px;
+    height: 15px;
+    background-color: #555;
+    border: 1px solid #fff;
+    margin-top: 5px;
+}
+
+.hud-bar {
+    width: 100%;
+    height: 100%;
+    background-color: #ff00ff; /* Magenta for explosive */
+}
+
+#pierce-bar {
+    background-color: #00ffff; /* Cyan for pierce */
+}
+
+#inked-bar {
+    background-color: #4b0082; /* Indigo for inked */
+}
+
+.menu-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 40px;
+    border-radius: 10px;
+    text-align: center;
+    z-index: 130; /* Increased from 110 to be on top of game-ui-container */
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.menu-container h1 {
+    font-size: 3em;
+    color: #00ff00;
+    margin-bottom: 20px;
+}
+
+.menu-container h2 {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+}
+
+.menu-container button {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.5em;
+    background-color: #333;
+    color: #00ff00;
+    border: 2px solid #00ff00;
+    padding: 10px 20px;
+    margin: 10px;
+    cursor: pointer;
+    width: 250px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.menu-container button:hover {
+    background-color: white;
+    color: black;
+}
+
+#shop-items {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    width: 450px; /* Give the shop a bit more width */
+}
+
+.shop-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.shop-item span {
+    font-size: 1.2em;
+    text-align: left;
+}
+
+.hidden {
+    display: none;
+}
